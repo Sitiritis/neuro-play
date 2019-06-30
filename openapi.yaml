@@ -1,0 +1,291 @@
+openapi: 3.0.0
+
+servers:
+  - url: https://noom.neuroops.link/
+
+info:
+  title: Noom Service API
+  version: '0.1'
+
+paths:
+  /user/signup:
+    post:
+      summary: Signup user
+      operationId: app.post_signup
+#      parameters:
+#        - $ref: '#/components/parameters/email'
+#        - $ref: '#/components/parameters/password'
+#        - $ref: '#/components/parameters/nickname'
+      tags:
+        - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackHistory'
+      responses:
+        '200':
+          description: User created and return userdata
+          content:
+            application/json:
+              schema:
+#                x-body-name: user
+                $ref: '#/components/schemas/User'
+  /user/signin:
+    post:
+      summary: Login user
+      operationId: app.post_signin
+#      operationId: app.generate_token
+      tags:
+        - user
+      parameters:
+        - $ref: '#/components/parameters/email'
+        - $ref: '#/components/parameters/password'
+#      requestBody:
+#        content:
+#          application/x-www-form-urlencoded:
+#            schema:
+#              $ref: '#/components/schemas/Login'
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/Login'
+      responses:
+        '200':
+          description: Login user to get auth token
+          content:
+            application/json:
+              schema:
+#                x-body-name: user
+                $ref: '#/components/schemas/User'
+  /user:
+    get:
+      tags:
+        - user
+      operationId: app.get_userdata
+      summary: Get user data
+      responses:
+        '200':
+          description: Return userdata
+          content:
+            application/json:
+              schema:
+#                x-body-name: user
+                $ref: '#/components/schemas/User'
+
+  /user/baseline:
+    put:
+      tags:
+        - User
+        - Baseline
+      operationId: app.baseline_put
+      summary: Add baseline before work session
+      requestBody:
+        description: EEG baseline data and duration
+        required: true
+        content:
+          application/json:
+            schema:
+              x-body-name: baseline
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+      responses:
+        '201':
+          description: Baseline added
+
+  /tracks/next:
+    get:
+      tags:
+        - track
+        - recomendation
+      operationId: app.get_next_track
+      summary: Get potentially productivity
+      responses:
+        '200':
+          description: Return track object with android metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+        '404':
+          description: Cannot find any track. Please add tracks over /tracks/add api call
+
+  /tracks/{track_id}:
+    get:
+      tags:
+        - track
+      operationId: app.get_track
+      summary: Get a track by id
+      parameters:
+        - $ref: '#/components/parameters/track_id'
+      responses:
+        '200':
+          description: Return track info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+        '404':
+          description: Track does not exist
+    put:
+      tags:
+        - Track
+      operationId: app.put_track_update
+      summary: Create or update a track
+      parameters:
+        - $ref: '#/components/parameters/track_id'
+      responses:
+        '200':
+          description: Track info updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Track'
+
+  /tracks/add:
+    put:
+      tags:
+        - Track
+      operationId: app.put_track_add
+      summary: Create or update a track
+      responses:
+        '201':
+          description: New track added
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Track'
+
+  /tracks/{track_id}/history:
+    put:
+      tags:
+        - history
+      operationId: app.put_track_history
+      summary: Put track play event in history
+      parameters:
+        - $ref: '#/components/parameters/track_id'
+      responses:
+        '201':
+          description: Track history
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackHistory'
+
+components:
+  parameters:
+    track_id:
+      name: track_id
+      in: path
+      required: true
+      description: unique track identificator
+      schema:
+        type: integer # must be uuid
+    email:
+      name: email
+      in: query
+      description: User email
+      required: true
+      schema:
+        type: string
+    password:
+      name: password
+      in: query
+      description: User password hash
+      required: true
+      schema:
+        type: string
+    nickname:
+      name: nickname
+      in: query
+      description: User nickname
+      required: true
+      schema:
+        type: string
+
+
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier
+          example: 123
+          readOnly: true
+        nickname:
+          type: string
+          description: User nickname
+          example: neuroplayer
+          minLength: 4
+          maxLength: 32
+          readOnly: true
+        email:
+          type: string
+          description: User email address
+          example: example@noom.neuroops.link
+          minLength: 5
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          description: Creation time
+          example: '2015-07-07T15:49:51.230+02:00'
+          readOnly: true
+
+    Track:
+      type: object
+      properties:
+        id:
+          type: integer # must be uuid
+          description: Unique track identifier
+          example: 123
+        user_id:
+          type: integer
+          description: Track owner unique identifier
+        track_name:
+          type: string
+          description: Track name (Artist - Name)
+        android_meta:
+          type: object
+          description: Android meta
+        duration:
+          type: integer
+          description: Track duration in seconds
+        track_history:
+          type: array
+          description: Track history
+          items:
+            $ref: '#/components/schemas/TrackHistory'
+
+    TrackHistory:
+      type: object
+      properties:
+        add_time:
+          type: integer
+          description: Time when track was played
+          readOnly: true
+        track_id:
+          type: integer # must be uuid
+          description: Unique track identifier
+          readOnly: true
+        listen_duration:
+          type: number
+          description: How long you have listened to this track
+          readOnly: true
+        productivity_index:
+          type: number
+          description: Calculated user performance index
+          readOnly: true
+
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header

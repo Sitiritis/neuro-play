@@ -1,0 +1,8 @@
+connexion
+Flask
+SQLAlchemy
+sklearn
+mne
+matplotlib
+psycopg2
+pandas
